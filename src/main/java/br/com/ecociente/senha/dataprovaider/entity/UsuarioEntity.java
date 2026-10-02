@@ -36,8 +36,8 @@ public class UsuarioEntity {
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
 
-    @Column(name = "cpf_cnpj", length = 18)
-    private String cpfCnpj;
+    @Column(name = "cpf", length = 18)
+    private String cpf;
 
     @Column(name = "url_avatar", length = 500)
     private String urlAvatar;
@@ -50,4 +50,7 @@ public class UsuarioEntity {
 
     @Column(name = "tipo_usuario_id", nullable = false)
     private Integer tipoUsuarioId;
+
+    @Column(name = "endereco_id", nullable = false)
+    private Integer enderecoId;
 }

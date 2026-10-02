@@ -1,16 +1,15 @@
 package br.com.ecociente.senha.core.gateway;
 
-import java.time.OffsetDateTime;
-import java.util.Optional;
-
 import br.com.ecociente.senha.core.domain.RecuperacaoSenha;
 
+import java.sql.Timestamp;
+import java.util.Optional;
+
 public interface RecuperacaoSenhaGateway {
+
     RecuperacaoSenha salvar(RecuperacaoSenha recuperacaoSenha);
 
-    Optional<Integer> buscarUsuarioIdPorTokenHash(String tokenHash);
+    Optional<RecuperacaoSenha> buscarUltimaPorUsuarioId(Integer usuarioId);
 
-    Optional<RecuperacaoSenha> buscarPorTokenHash(String tokenHash);
-
-    void invalidarPendentes(Integer usuarioId, OffsetDateTime agora);
+    void invalidarPendentes(Integer usuarioId, Timestamp agora);
 }

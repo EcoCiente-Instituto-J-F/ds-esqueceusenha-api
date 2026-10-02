@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
+import java.sql.Timestamp;
 
 @Getter
 @Setter
@@ -18,6 +18,6 @@ public class RecuperacaoSenha {
     private Integer id;
     private Integer usuarioId;
     private String tokenHash;
-    private OffsetDateTime expiraEm;
-    private OffsetDateTime utilizadoEm;
+    private Timestamp expiraEm;
+    private Timestamp utilizadoEm;
 }

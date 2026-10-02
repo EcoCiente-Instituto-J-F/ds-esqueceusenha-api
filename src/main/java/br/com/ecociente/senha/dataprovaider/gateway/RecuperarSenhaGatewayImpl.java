@@ -8,7 +8,7 @@ import br.com.ecociente.senha.dataprovaider.repository.EsqueceuSenhaRepositoy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
+import java.sql.Timestamp;
 import java.util.Optional;
 
 @Component
@@ -31,20 +31,18 @@ public class RecuperarSenhaGatewayImpl
     }
 
     @Override
-    public Optional<Integer> buscarUsuarioIdPorTokenHash(String tokenHash) {
-        return esqueciSenhaRepository.buscarUsuarioIdPorTokenHash(tokenHash);
-    }
-
-    @Override
-    public Optional<RecuperacaoSenha> buscarPorTokenHash(String tokenHash) {
-        return esqueciSenhaRepository.findByTokenHash(tokenHash)
+    public Optional<RecuperacaoSenha> buscarUltimaPorUsuarioId(
+            Integer usuarioId
+    ) {
+        return esqueciSenhaRepository
+                .findFirstByUsuarioIdOrderByIdDesc(usuarioId)
                 .map(recuperarSenhaMapper::toDomain);
     }
 
     @Override
     public void invalidarPendentes(
             Integer usuarioId,
-            OffsetDateTime agora
+            Timestamp agora
     ) {
         esqueciSenhaRepository.invalidarPendentes(usuarioId, agora);
     }

@@ -12,14 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Base64;
-import java.util.HexFormat;
+import java.sql.Timestamp;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -35,7 +31,7 @@ public class SenhaService {
     );
 
     private static final Pattern PADRAO_TOKEN = Pattern.compile(
-            "^[A-Za-z0-9_-]{43}$"
+            "^[0-9]{4}$"
     );
 
     private final UsuarioGateway usuarioGateway;
@@ -44,7 +40,7 @@ public class SenhaService {
     private final EmailGateway emailGateway;
 
     @Transactional
-    public OffsetDateTime solicitarRecuperacao(String email) {
+    public Timestamp solicitarRecuperacao(String email) {
         var usuarioOptional = usuarioGateway.buscarPorEmail(email);
 
         if (usuarioOptional.isEmpty()) {
@@ -52,7 +48,7 @@ public class SenhaService {
         }
 
         Usuario usuario = usuarioOptional.get();
-        OffsetDateTime momento = agora();
+        Timestamp momento = agora();
 
         recuperacaoSenhaGateway.invalidarPendentes(
                 usuario.getId(),
@@ -61,10 +57,15 @@ public class SenhaService {
 
         String token = gerarToken();
 
+        Timestamp expiraEm = new Timestamp(
+                momento.getTime()
+                        + TimeUnit.MINUTES.toMillis(VALIDADE_TOKEN_MINUTOS)
+        );
+
         RecuperacaoSenha recuperacao = RecuperacaoSenha.builder()
                 .usuarioId(usuario.getId())
-                .tokenHash(gerarHashToken(token))
-                .expiraEm(momento.plusMinutes(VALIDADE_TOKEN_MINUTOS))
+                .tokenHash(senhaEncoderGateway.gerarHash(token))
+                .expiraEm(expiraEm)
                 .utilizadoEm(null)
                 .build();
 
@@ -76,7 +77,8 @@ public class SenhaService {
     }
 
     @Transactional
-    public OffsetDateTime redefinirSenha(
+    public Timestamp redefinirSenha(
+            String email,
             String token,
             String novaSenha,
             String confirmacaoSenha
@@ -87,28 +89,34 @@ public class SenhaService {
             throw tokenInvalido();
         }
 
-        String tokenHash = gerarHashToken(token);
-
-        Integer usuarioId = recuperacaoSenhaGateway
-                .buscarUsuarioIdPorTokenHash(tokenHash)
-                .orElseThrow(this::tokenInvalido);
-
-        Usuario usuario = usuarioGateway.buscarPorId(usuarioId)
+        Usuario usuario = usuarioGateway.buscarPorEmail(email)
                 .orElseThrow(this::tokenInvalido);
 
         RecuperacaoSenha recuperacao = recuperacaoSenhaGateway
-                .buscarPorTokenHash(tokenHash)
+                .buscarUltimaPorUsuarioId(usuario.getId())
                 .orElseThrow(this::tokenInvalido);
 
-        OffsetDateTime momento = agora();
+        Timestamp momento = agora();
 
-        if (!usuario.getId().equals(recuperacao.getUsuarioId())
-                || recuperacao.getUtilizadoEm() != null
-                || !recuperacao.getExpiraEm().isAfter(momento)) {
+        if (recuperacao.getUtilizadoEm() != null
+                || !recuperacao.getExpiraEm().after(momento)) {
+            throw tokenInvalido();
+        }
+
+        if (!senhaEncoderGateway.corresponde(
+                token,
+                recuperacao.getTokenHash()
+        )) {
             throw tokenInvalido();
         }
 
         String senhaHash = senhaEncoderGateway.gerarHash(novaSenha);
+
+        momento = agora();
+
+        if (!recuperacao.getExpiraEm().after(momento)) {
+            throw tokenInvalido();
+        }
 
         usuarioGateway.atualizarSenha(usuario.getId(), senhaHash);
 
@@ -124,7 +132,7 @@ public class SenhaService {
     }
 
     @Transactional
-    public OffsetDateTime alterarSenha(
+    public Timestamp alterarSenha(
             String emailAutenticado,
             String senhaAtual,
             String novaSenha,
@@ -183,38 +191,20 @@ public class SenhaService {
     }
 
     private String gerarToken() {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-
-        return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(bytes);
-    }
-
-    private String gerarHashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(
-                    token.getBytes(StandardCharsets.UTF_8)
-            );
-
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException(
-                    "SHA-256 não está disponível.",
-                    exception
-            );
-        }
+        return String.format(
+                Locale.ROOT,
+                "%04d",
+                SECURE_RANDOM.nextInt(10000)
+        );
     }
 
     private RegraNegocioException tokenInvalido() {
         return new RegraNegocioException(
-                "Token inválido, expirado ou já utilizado."
+                "Código inválido, expirado ou já utilizado."
         );
     }
 
-    private OffsetDateTime agora() {
-        return OffsetDateTime.now(ZoneOffset.UTC);
+    private Timestamp agora() {
+        return new Timestamp(System.currentTimeMillis());
     }
 }
