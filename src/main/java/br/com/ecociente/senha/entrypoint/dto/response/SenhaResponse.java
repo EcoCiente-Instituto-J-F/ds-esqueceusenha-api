@@ -4,11 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
+import java.sql.Timestamp;
 
 @Getter
 @Builder
 @AllArgsConstructor
 public class SenhaResponse {
-    private OffsetDateTime processadoEm;
+    private Timestamp processadoEm;
 }

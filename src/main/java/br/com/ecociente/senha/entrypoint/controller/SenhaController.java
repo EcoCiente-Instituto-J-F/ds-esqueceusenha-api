@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.OffsetDateTime;
+import java.sql.Timestamp;
 
 @RestController
 @RequestMapping("/senhas")
@@ -27,7 +27,7 @@ public class SenhaController {
     public ResponseEntity<SenhaResponse> esqueceuSenha(
             @Valid @RequestBody EsqueciSenhaRequest request
     ) {
-        OffsetDateTime processadoEm = senhaService.solicitarRecuperacao(
+        Timestamp processadoEm = senhaService.solicitarRecuperacao(
                 request.email()
         );
 
@@ -39,28 +39,29 @@ public class SenhaController {
     }
 
     @PostMapping("/redefinir")
-    public ResponseEntity<SenhaResponse> redefinirSenha(
-            @Valid @RequestBody RedefinirSenhaRequest request
-    ) {
-        OffsetDateTime processadoEm = senhaService.redefinirSenha(
-                request.token(),
-                request.novaSenha(),
-                request.confirmacaoSenha()
-        );
+public ResponseEntity<SenhaResponse> redefinirSenha(
+        @Valid @RequestBody RedefinirSenhaRequest request
+) {
+    Timestamp processadoEm = senhaService.redefinirSenha(
+            request.email(),
+            request.token(),
+            request.novaSenha(),
+            request.confirmacaoSenha()
+    );
 
-        return ResponseEntity.ok(
-                SenhaResponse.builder()
-                        .processadoEm(processadoEm)
-                        .build()
-        );
-    }
+    return ResponseEntity.ok(
+            SenhaResponse.builder()
+                    .processadoEm(processadoEm)
+                    .build()
+    );
+}
 
     @PostMapping("/alterar")
     public ResponseEntity<SenhaResponse> alterarSenha(
             @Valid @RequestBody AlterarSenhaRequest request,
             Authentication authentication
     ) {
-        OffsetDateTime processadoEm = senhaService.alterarSenha(
+        Timestamp processadoEm = senhaService.alterarSenha(
                 authentication.getName(),
                 request.senhaAtual(),
                 request.novaSenha(),
