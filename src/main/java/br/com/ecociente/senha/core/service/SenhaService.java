@@ -5,6 +5,7 @@ import br.com.ecociente.senha.core.domain.Usuario;
 import br.com.ecociente.senha.core.exception.RecursoNaoEncontradoException;
 import br.com.ecociente.senha.core.exception.RegraNegocioException;
 import br.com.ecociente.senha.core.gateway.EmailGateway;
+import br.com.ecociente.senha.core.gateway.FirebaseSenhaGateway;
 import br.com.ecociente.senha.core.gateway.RecuperacaoSenhaGateway;
 import br.com.ecociente.senha.core.gateway.SenhaEncoderGateway;
 import br.com.ecociente.senha.core.gateway.UsuarioGateway;
@@ -38,6 +39,7 @@ public class SenhaService {
     private final RecuperacaoSenhaGateway recuperacaoSenhaGateway;
     private final SenhaEncoderGateway senhaEncoderGateway;
     private final EmailGateway emailGateway;
+    private final FirebaseSenhaGateway firebaseSenhaGateway;
 
     @Transactional
     public Timestamp solicitarRecuperacao(String email) {
@@ -119,6 +121,7 @@ public class SenhaService {
         }
 
         usuarioGateway.atualizarSenha(usuario.getId(), senhaHash);
+        firebaseSenhaGateway.atualizarSenha(usuario.getEmail(), novaSenha);
 
         recuperacao.setUtilizadoEm(momento);
         recuperacaoSenhaGateway.salvar(recuperacao);
@@ -160,6 +163,7 @@ public class SenhaService {
         String senhaHash = senhaEncoderGateway.gerarHash(novaSenha);
 
         usuarioGateway.atualizarSenha(usuario.getId(), senhaHash);
+        firebaseSenhaGateway.atualizarSenha(usuario.getEmail(), novaSenha);
 
         recuperacaoSenhaGateway.invalidarPendentes(
                 usuario.getId(),

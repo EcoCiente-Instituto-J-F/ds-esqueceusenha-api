@@ -22,7 +22,7 @@ public class UsuarioGatewayImpl implements UsuarioGateway {
 
     @Override
 public Optional<Usuario> buscarPorEmail(String email) {
-    return usuarioRepository.findByEmailUsuario(email)
+    return usuarioRepository.findByEmailUsuarioIgnoreCase(email.trim())
             .map(usuarioMapper::toDomain);
 }
 

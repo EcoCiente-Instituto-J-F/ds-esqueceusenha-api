@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import br.com.ecociente.senha.core.exception.EnvioEmailException;
 import br.com.ecociente.senha.core.exception.RecursoNaoEncontradoException;
 import br.com.ecociente.senha.core.exception.RegraNegocioException;
+import br.com.ecociente.senha.core.exception.SincronizacaoSenhaException;
 import br.com.ecociente.senha.entrypoint.dto.ErrorResponse;
 import br.com.ecociente.senha.entrypoint.dto.ValidationError;
 
@@ -104,6 +105,23 @@ public ResponseEntity<ErrorResponse> handleEnvioEmail(
             .body(ErrorResponse.builder()
                     .status(503)
                     .codigoError("ENVIO_EMAIL_INDISPONIVEL")
+                    .details(List.of(ValidationError.builder()
+                            .message(
+                                    "Não foi possível processar a solicitação. "
+                                            + "Tente novamente mais tarde."
+                            )
+                            .build()))
+                    .build());
+}
+
+  @ExceptionHandler(SincronizacaoSenhaException.class)
+public ResponseEntity<ErrorResponse> handleSincronizacaoSenha(
+        SincronizacaoSenhaException exception
+) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(ErrorResponse.builder()
+                    .status(503)
+                    .codigoError("SINCRONIZACAO_SENHA_INDISPONIVEL")
                     .details(List.of(ValidationError.builder()
                             .message(
                                     "Não foi possível processar a solicitação. "
