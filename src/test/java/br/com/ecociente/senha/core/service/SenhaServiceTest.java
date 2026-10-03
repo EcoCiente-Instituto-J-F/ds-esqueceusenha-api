@@ -24,6 +24,7 @@ import br.com.ecociente.senha.core.exception.EnvioEmailException;
 import br.com.ecociente.senha.core.exception.RecursoNaoEncontradoException;
 import br.com.ecociente.senha.core.exception.RegraNegocioException;
 import br.com.ecociente.senha.core.gateway.EmailGateway;
+import br.com.ecociente.senha.core.gateway.FirebaseSenhaGateway;
 import br.com.ecociente.senha.core.gateway.RecuperacaoSenhaGateway;
 import br.com.ecociente.senha.core.gateway.SenhaEncoderGateway;
 import br.com.ecociente.senha.core.gateway.UsuarioGateway;
@@ -42,6 +43,9 @@ class SenhaServiceTest {
 
     @Mock
     private EmailGateway emailGateway;
+
+    @Mock
+    private FirebaseSenhaGateway firebaseSenhaGateway;
 
     @InjectMocks
     private SenhaService service;
