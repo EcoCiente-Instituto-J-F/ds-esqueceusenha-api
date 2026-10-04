@@ -10,7 +10,7 @@ import jakarta.persistence.LockModeType;
 
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity,Integer> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<UsuarioEntity> findByEmailUsuario(String email);
+    Optional<UsuarioEntity> findByEmailUsuarioIgnoreCase(String email);
 
     @Override
     @Lock(LockModeType.PESSIMISTIC_WRITE)
