@@ -22,9 +22,36 @@ jobs:
 
     name: Build e testes
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     timeout-minutes: 15
+
+    env:
+      DB_URL: jdbc:postgresql://127.0.0.1:5432/senha_ci
+      DB_USER: senha_ci
+      DB_PASSWORD: senha_ci
+      JWT_SECRET: ecociente-senha-ci-0123456789abcdef0123456789
+      URL_REDEFINICAO_SENHA: http://localhost:8080/redefinir
+      MAIL_FROM: ci@example.invalid
+      MAIL_HOST: localhost
+      MAIL_PORT: "1025"
+      MAIL_USERNAME: ci
+      MAIL_PASSWORD: ci
+      DDL_AUTO: create-drop
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: senha_ci
+          POSTGRES_USER: senha_ci
+          POSTGRES_PASSWORD: senha_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U senha_ci -d senha_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
 
@@ -39,6 +66,31 @@ jobs:
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v6
+
+      - name: Preparar Firebase local e Docker dos testes
+        shell: bash
+        run: |
+          docker version
+          docker info
+          mkdir -p src/test/resources
+          printf '%s\n' 'api.version=1.44' > src/test/resources/docker-java.properties
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/firebase-ci-private.pem 2>/dev/null
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          credentials = {
+              "type": "service_account",
+              "project_id": "ecociente-ci-local",
+              "private_key_id": "ci-test",
+              "private_key": Path("/tmp/firebase-ci-private.pem").read_text(),
+              "client_email": "ci@ecociente-ci-local.iam.gserviceaccount.com",
+              "client_id": "1234567890",
+              "token_uri": "https://oauth2.googleapis.com/token"
+          }
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write("FIREBASE_CREDENCIAIS=" + json.dumps(credentials, separators=(",", ":")) + "\n")
+          PY
 
       - name: Dar permissao ao Gradle Wrapper
         run: chmod +x gradlew
