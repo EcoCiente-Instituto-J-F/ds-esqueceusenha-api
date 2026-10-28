@@ -31,7 +31,6 @@ jobs:
       DB_USER: senha_ci
       DB_PASSWORD: senha_ci
       JWT_SECRET: ecociente-senha-ci-0123456789abcdef0123456789
-      FIREBASE_CREDENCIAIS: '{"type":"service_account","project_id":"ecociente-ci-local","private_key_id":"test-key","private_key":"-----BEGIN PRIVATE KEY-----\\nTESTE-SEM-CREDENCIAL-REAL\\n-----END PRIVATE KEY-----\\n","client_email":"ci@ecociente-ci-local.iam.gserviceaccount.com","client_id":"1234567890","token_uri":"https://oauth2.googleapis.com/token"}'
       URL_REDEFINICAO_SENHA: http://localhost:8080/redefinir
       MAIL_FROM: ci@example.invalid
       MAIL_HOST: localhost
@@ -68,26 +67,29 @@ jobs:
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Preparar credenciais ficticias e banco para testes
+      - name: Preparar Firebase local e Docker dos testes
         shell: bash
         run: |
           docker version
           docker info
           mkdir -p src/test/resources
           printf '%s\n' 'api.version=1.44' > src/test/resources/docker-java.properties
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/firebase-ci-private.pem 2>/dev/null
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
-          credenciais = {
+          credentials = {
               "type": "service_account",
               "project_id": "ecociente-ci-local",
-              "private_key_id": "test-key",
-              "private_key": "-----BEGIN PRIVATE KEY-----\\nTESTE-SEM-CREDENCIAL-REAL\\n-----END PRIVATE KEY-----\\n",
+              "private_key_id": "ci-test",
+              "private_key": Path("/tmp/firebase-ci-private.pem").read_text(),
               "client_email": "ci@ecociente-ci-local.iam.gserviceaccount.com",
               "client_id": "1234567890",
-              "token_uri": "https://oauth2.googleapis.com/token",
+              "token_uri": "https://oauth2.googleapis.com/token"
           }
-          Path("/tmp/firebase-ci-placeholder.json").write_text(json.dumps(credenciais))
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write("FIREBASE_CREDENCIAIS=" + json.dumps(credentials, separators=(",", ":")) + "\n")
           PY
 
       - name: Dar permissao ao Gradle Wrapper
